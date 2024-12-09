@@ -11,7 +11,8 @@ download_node() {
     ca-certificates \
     curl \
     gnupg \
-    wget
+    wget \
+    jq
   
   sudo install -m 0755 -d /etc/apt/keyrings
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
@@ -54,7 +55,7 @@ EOF
   docker build -t infera-node .
 
   # Запуск контейнера с параметром network=host
-  docker run -d --name infera-node --network="host" infera-node
+  docker run -d --name infera-node --network="host" --restart unless-stopped infera-node
 
   echo "Нода успешно установлена и запущена в контейнере Docker!"
 }
