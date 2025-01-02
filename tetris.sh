@@ -26,17 +26,33 @@ download_node() {
   sudo apt-get update
   sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
+  # Запуск и активация службы Docker
+  echo "Запускаю службу Docker..."
+  sudo systemctl start docker
+  sudo systemctl enable docker
+  
+  # Проверка статуса Docker
+  if ! sudo systemctl is-active --quiet docker; then
+    echo "Ошибка: Не удалось запустить службу Docker"
+    return 1
+  fi
+
   # Установка Ollama
   echo "Устанавливаю Ollama..."
   curl -fsSL https://ollama.com/install.sh | sh
   
-  # Зап��ск сервиса Ollama
+  # Запуск сервиса Ollama
   echo "Запускаю сервис Ollama..."
   systemctl start ollama || ollama serve &
   sleep 10  # Даем время Ollama запуститься
 
   # Загрузка файла infera
+  echo "Загружаю файл infera..."
   wget -O infera "https://drive.google.com/uc?id=1VSeI8cXojdh78H557SQJ9LfnnaS96DT-&export=download&confirm=yes"
+  if [ ! -f infera ]; then
+    echo "Ошибка: Не удалось загрузить файл infera"
+    return 1
+  fi
   chmod +x infera
 
   # Создание Dockerfile
@@ -52,12 +68,20 @@ CMD ["infera"]
 EOF
 
   # Сборка Docker-образа
-  docker build -t infera-node .
+  echo "Собираю Docker-образ..."
+  if ! docker build -t infera-node .; then
+    echo "Ошибка: Не удалось собрать Docker-образ"
+    return 1
+  fi
 
   # Запуск контейнера с параметром network=host
-  docker run -d --name infera-node --network="host" --restart unless-stopped infera-node
+  echo "Запускаю контейнер..."
+  if ! docker run -d --name infera-node --network="host" --restart unless-stopped infera-node; then
+    echo "Ошибка: Не удалось запустить контейнер"
+    return 1
+  fi
 
-  echo "Нода успешно установлена и запущена в контейнере Docker!"
+  echo "✅ Нода успешно установлена и запущена в контейнере Docker!"
 }
 
 check_points() {
